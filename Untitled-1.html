@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Password Strength Checker — Java</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#06080f;--panel:#0b0f1c;--panel2:#0f1426;--panel3:#0d1220;
+  --border:#1b2640;--border2:#243350;
+  --green:#00ff9d;--green-dim:#00ff9d1a;--green-mid:#00ff9d40;
+  --amber:#ffb300;--red:#ff3d5a;--blue:#4d9fff;
+  --text:#c8d8f0;--text2:#5a7299;--text3:#2e4166;
+  --mono:'Share Tech Mono',monospace;--head:'Rajdhani',sans-serif;
+}
+html{font-size:16px}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;background:repeating-linear-gradient(0deg,rgba(0,0,0,0.07) 0px,rgba(0,0,0,0.07) 1px,transparent 1px,transparent 3px)}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(0,255,157,0.015) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,157,0.015) 1px,transparent 1px);background-size:40px 40px}
+
+/* HEADER */
+header{position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border);background:rgba(6,8,15,0.92);backdrop-filter:blur(16px)}
+.hdr{max-width:1120px;margin:0 auto;padding:0 36px;height:56px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-mark{width:30px;height:30px;border:1px solid var(--green);border-radius:4px;display:grid;place-items:center;box-shadow:0 0 10px var(--green-mid)}
+.logo-mark svg{color:var(--green)}
+.logo-txt{font-family:var(--head);font-size:17px;font-weight:700;color:var(--green);letter-spacing:1px;text-shadow:0 0 14px var(--green-mid)}
+.logo-txt em{color:var(--text2);font-style:normal}
+.hdr-r{display:flex;align-items:center;gap:14px}
+.badge{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);border:1px solid var(--border2);padding:3px 9px;border-radius:2px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 7px var(--green);animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* MAIN */
+main{position:relative;z-index:1;flex:1;max-width:1120px;margin:0 auto;width:100%;padding:36px 36px 64px;display:grid;grid-template-columns:1fr 400px;gap:22px;align-items:start}
+
+/* PANEL base */
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden;box-shadow:0 0 32px rgba(0,255,157,0.03),0 8px 32px rgba(0,0,0,0.5)}
+.pbar{background:var(--panel2);padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px}
+.wd{width:11px;height:11px;border-radius:50%}
+.wd.r{background:#ff5f57}.wd.y{background:#febc2e}.wd.g{background:#28c840}
+.pt{font-size:11px;color:var(--text3);margin-left:7px;letter-spacing:.3px}
+.pb{margin-left:auto;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:2px 8px;border-radius:2px}
+.pb.green{color:var(--green);background:var(--green-dim);border:1px solid var(--green-mid)}
+.pb.amber{color:var(--amber);background:rgba(255,179,0,0.1);border:1px solid rgba(255,179,0,0.25)}
+
+/* TERMINAL */
+.terminal{animation:up .6s ease both}
+@keyframes up{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.term-out{padding:22px 22px 6px;min-height:310px;max-height:420px;overflow-y:auto;font-size:13px;line-height:1.8;scroll-behavior:smooth}
+.term-out::-webkit-scrollbar{width:4px}
+.term-out::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.line{display:block;white-space:pre-wrap;word-break:break-all}
+.l-sys{color:var(--text2)}.l-menu{color:var(--text)}.l-prompt{color:var(--green)}
+.l-ok{color:var(--green);text-shadow:0 0 8px var(--green-mid)}.l-err{color:var(--red)}.l-warn{color:var(--amber)}
+.l-div{color:var(--text3)}.l-user{color:#fff;opacity:.65}
+.l-weak{color:var(--red);font-size:14px;letter-spacing:1px;font-weight:bold}
+.l-medium{color:var(--amber);font-size:14px;letter-spacing:1px;font-weight:bold}
+.l-strong{color:var(--green);font-size:14px;letter-spacing:1px;font-weight:bold;text-shadow:0 0 10px var(--green-mid)}
+
+/* quick btns */
+.qbtns{display:flex;gap:7px;padding:4px 22px 12px;flex-wrap:wrap}
+.qb{padding:5px 13px;border:1px solid var(--border2);border-radius:2px;font-family:var(--mono);font-size:11px;color:var(--text2);cursor:pointer;background:none;transition:all .18s;letter-spacing:.3px}
+.qb:hover{border-color:var(--green);color:var(--green);background:var(--green-dim)}
+.qb.restart{border-color:rgba(255,61,90,.15);color:rgba(255,61,90,.4)}
+.qb.restart:hover{border-color:var(--red);color:var(--red);background:rgba(255,61,90,.07)}
+
+/* input row */
+.inp-row{display:flex;align-items:center;padding:10px 22px 18px;border-top:1px solid var(--border);background:rgba(0,0,0,0.18);gap:0}
+.pchar{color:var(--green);font-size:13px;margin-right:8px;white-space:nowrap}
+#tIn{flex:1;background:none;border:none;outline:none;font-family:var(--mono);font-size:13px;color:#fff;caret-color:var(--green)}
+#tIn::placeholder{color:var(--text3);font-size:12px}
+.enter-btn{background:none;border:1px solid var(--border2);padding:5px 11px;border-radius:2px;font-family:var(--mono);font-size:10px;color:var(--text2);cursor:pointer;transition:all .18s;white-space:nowrap;margin-left:8px}
+.enter-btn:hover{border-color:var(--green);color:var(--green);box-shadow:0 0 8px var(--green-dim)}
+
+/* RIGHT COL */
+.right-col{display:flex;flex-direction:column;gap:18px;animation:up .6s .1s ease both}
+
+/* code */
+.code-scroll{background:#080a18;max-height:310px;overflow-y:auto;overflow-x:auto}
+.code-scroll::-webkit-scrollbar{width:3px;height:3px}
+.code-scroll::-webkit-scrollbar-thumb{background:var(--border2)}
+.code-inner{padding:18px 22px;font-size:12px;line-height:1.85;min-width:300px}
+.cl{display:flex}
+.ln{color:var(--text3);user-select:none;min-width:26px;text-align:right;padding-right:12px;margin-right:12px;border-right:1px solid var(--border);flex-shrink:0;font-size:11px}
+.kw{color:#c792ea}.ty{color:#82aaff}.fn{color:#00ff9d}
+.st{color:#c3e88d}.nm{color:#f78c6c}.cm{color:#2b3d5e;font-style:italic}
+.cn{color:#ffcb6b}.op{color:#89ddff}.cd{color:#dde6f5}
+
+/* info card */
+.ic-body{padding:16px}
+.ic-sec{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.ic-sec::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* levels */
+.levels{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.lv{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:3px;border:1px solid transparent}
+.lv.weak{background:rgba(255,61,90,0.07);border-color:rgba(255,61,90,0.18)}
+.lv.medium{background:rgba(255,179,0,0.07);border-color:rgba(255,179,0,0.18)}
+.lv.strong{background:rgba(0,255,157,0.07);border-color:rgba(0,255,157,0.18)}
+.lvb{font-size:9px;font-weight:700;letter-spacing:2px;padding:2px 7px;border-radius:2px;min-width:62px;text-align:center}
+.lv.weak .lvb{color:var(--red);background:rgba(255,61,90,0.15)}
+.lv.medium .lvb{color:var(--amber);background:rgba(255,179,0,0.15)}
+.lv.strong .lvb{color:var(--green);background:rgba(0,255,157,0.15)}
+.lvc{font-size:11px;color:var(--text2);line-height:1.4}
+
+/* crit table */
+.ct{border:1px solid var(--border);border-radius:3px;overflow:hidden}
+.cr{display:flex;align-items:center;gap:9px;padding:7px 11px;border-bottom:1px solid var(--border);font-size:11.5px;transition:background .2s}
+.cr:last-child{border-bottom:none}
+.cr.pass{background:rgba(0,255,157,0.04)}
+.cr.fail{color:var(--text2)}
+.ci{width:15px;height:15px;border-radius:50%;display:grid;place-items:center;font-size:9px;flex-shrink:0;transition:all .2s}
+.cr.pass .ci{background:var(--green);color:#000}
+.cr.fail .ci{background:var(--border2);color:var(--text3)}
+.cp{margin-left:auto;font-size:10px;color:var(--text3)}
+
+/* score bar */
+.sb-wrap{margin-top:12px}
+.sb-hd{display:flex;justify-content:space-between;margin-bottom:5px;font-size:11px}
+.sb-trk{height:4px;background:var(--border);border-radius:100px;overflow:hidden}
+.sb-fill{height:100%;border-radius:100px;width:0%;transition:width .4s ease,background .3s;box-shadow:0 0 5px currentColor}
+.score-tag{margin-left:auto;font-size:10px}
+
+/* footer */
+footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:14px 36px;display:flex;justify-content:space-between;font-size:10px;color:var(--text3);letter-spacing:.5px}
+@media(max-width:880px){main{grid-template-columns:1fr;padding:20px}header .hdr{padding:0 20px}footer{padding:14px 20px;flex-direction:column;gap:4px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
+      <span class="logo-txt">PASSWORD<em>CHECKER</em></span>
+    </div>
+    <div class="hdr-r">
+      <span class="badge">Java Simulation</span>
+      <div class="dot"></div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- TERMINAL -->
+  <div class="panel terminal">
+    <div class="pbar">
+      <div class="wd r"></div><div class="wd y"></div><div class="wd g"></div>
+      <span class="pt">PasswordStrengthChecker.java — Terminal</span>
+      <span class="pb green">Running</span>
+    </div>
+    <div class="term-out" id="out"></div>
+    <div class="qbtns">
+      <button class="qb" onclick="qk('1')">1. Create</button>
+      <button class="qb" onclick="qk('2')">2. Check</button>
+      <button class="qb" onclick="qk('3')">3. Edit</button>
+      <button class="qb" onclick="qk('4')">4. Exit</button>
+      <button class="qb restart" onclick="restart()" style="margin-left:auto">↺ Restart</button>
+    </div>
+    <div class="inp-row">
+      <span class="pchar">$&gt;</span>
+      <input type="text" id="tIn" placeholder="Type input and press Enter…" autocomplete="off" spellcheck="false">
+      <button class="enter-btn" onclick="submit()">ENTER ↵</button>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right-col">
+
+    <!-- Java source -->
+    <div class="panel">
+      <div class="pbar">
+        <div class="wd r"></div><div class="wd y"></div><div class="wd g"></div>
+        <span class="pt">PasswordStrengthChecker.java</span>
+        <span class="pb amber">Source</span>
+      </div>
+      <div class="code-scroll">
+        <div class="code-inner">
+<div class="cl"><span class="ln">1</span><span><span class="kw">import</span> <span class="cd">java.util.Scanner;</span></span></div>
+<div class="cl"><span class="ln">2</span><span><span class="kw">public class</span> <span class="cn">PasswordStrengthChecker</span> {</span></div>
+<div class="cl"><span class="ln">3</span><span>  <span class="kw">static</span> <span class="ty">String</span> password <span class="op">=</span> <span class="st">""</span>;</span></div>
+<div class="cl"><span class="ln">4</span><span>  <span class="kw">public static void</span> <span class="fn">main</span>(<span class="ty">String</span>[] args) {</span></div>
+<div class="cl"><span class="ln">5</span><span>    <span class="ty">Scanner</span> sc <span class="op">=</span> <span class="kw">new</span> <span class="ty">Scanner</span>(System.in);</span></div>
+<div class="cl"><span class="ln">6</span><span>    <span class="ty">int</span> choice;</span></div>
+<div class="cl"><span class="ln">7</span><span>    <span class="kw">do</span> {</span></div>
+<div class="cl"><span class="ln">8</span><span>      System.out.<span class="fn">println</span>(<span class="st">"--- PASSWORD STRENGTH CHECKER ---"</span>);</span></div>
+<div class="cl"><span class="ln">9</span><span>      System.out.<span class="fn">println</span>(<span class="st">"1. Create Password"</span>);</span></div>
+<div class="cl"><span class="ln">10</span><span>      System.out.<span class="fn">println</span>(<span class="st">"2. Check Password Strength"</span>);</span></div>
+<div class="cl"><span class="ln">11</span><span>      System.out.<span class="fn">println</span>(<span class="st">"3. Edit Password"</span>);</span></div>
+<div class="cl"><span class="ln">12</span><span>      System.out.<span class="fn">println</span>(<span class="st">"4. Exit"</span>);</span></div>
+<div class="cl"><span class="ln">13</span><span>      System.out.<span class="fn">print</span>(<span class="st">"Enter your choice: "</span>);</span></div>
+<div class="cl"><span class="ln">14</span><span>      choice <span class="op">=</span> sc.<span class="fn">nextInt</span>();</span></div>
+<div class="cl"><span class="ln">15</span><span>      sc.<span class="fn">nextLine</span>(); <span class="cm">// consume newline</span></span></div>
+<div class="cl"><span class="ln">16</span><span>      <span class="kw">switch</span> (choice) {</span></div>
+<div class="cl"><span class="ln">17</span><span>        <span class="kw">case</span> <span class="nm">1</span>:</span></div>
+<div class="cl"><span class="ln">18</span><span>          System.out.<span class="fn">print</span>(<span class="st">"Create your password: "</span>);</span></div>
+<div class="cl"><span class="ln">19</span><span>          password <span class="op">=</span> sc.<span class="fn">nextLine</span>();</span></div>
+<div class="cl"><span class="ln">20</span><span>          System.out.<span class="fn">println</span>(<span class="st">"Password created successfully!"</span>); <span class="kw">break</span>;</span></div>
+<div class="cl"><span class="ln">21</span><span>        <span class="kw">case</span> <span class="nm">2</span>:</span></div>
+<div class="cl"><span class="ln">22</span><span>          <span class="kw">if</span> (password.<span class="fn">equals</span>(<span class="st">""</span>))</span></div>
+<div class="cl"><span class="ln">23</span><span>            System.out.<span class="fn">println</span>(<span class="st">"No password created yet!"</span>);</span></div>
+<div class="cl"><span class="ln">24</span><span>          <span class="kw">else</span> <span class="fn">checkStrength</span>(password); <span class="kw">break</span>;</span></div>
+<div class="cl"><span class="ln">25</span><span>        <span class="kw">case</span> <span class="nm">3</span>:</span></div>
+<div class="cl"><span class="ln">26</span><span>          <span class="kw">if</span> (password.<span class="fn">equals</span>(<span class="st">""</span>))</span></div>
+<div class="cl"><span class="ln">27</span><span>            System.out.<span class="fn">println</span>(<span class="st">"No password available to edit!"</span>);</span></div>
+<div class="cl"><span class="ln">28</span><span>          <span class="kw">else</span> {</span></div>
+<div class="cl"><span class="ln">29</span><span>            System.out.<span class="fn">print</span>(<span class="st">"Enter new password: "</span>);</span></div>
+<div class="cl"><span class="ln">30</span><span>            password <span class="op">=</span> sc.<span class="fn">nextLine</span>();</span></div>
+<div class="cl"><span class="ln">31</span><span>            System.out.<span class="fn">println</span>(<span class="st">"Password updated successfully!"</span>);} <span class="kw">break</span>;</span></div>
+<div class="cl"><span class="ln">32</span><span>        <span class="kw">case</span> <span class="nm">4</span>:</span></div>
+<div class="cl"><span class="ln">33</span><span>          System.out.<span class="fn">println</span>(<span class="st">"Exiting program..."</span>); <span class="kw">break</span>;</span></div>
+<div class="cl"><span class="ln">34</span><span>        <span class="kw">default</span>:</span></div>
+<div class="cl"><span class="ln">35</span><span>          System.out.<span class="fn">println</span>(<span class="st">"Invalid choice!"</span>);</span></div>
+<div class="cl"><span class="ln">36</span><span>      }</span></div>
+<div class="cl"><span class="ln">37</span><span>    } <span class="kw">while</span> (choice <span class="op">!=</span> <span class="nm">4</span>);</span></div>
+<div class="cl"><span class="ln">38</span><span>    sc.<span class="fn">close</span>();</span></div>
+<div class="cl"><span class="ln">39</span><span>  }</span></div>
+<div class="cl"><span class="ln">40</span><span></span></div>
+<div class="cl"><span class="ln">41</span><span>  <span class="kw">public static void</span> <span class="fn">checkStrength</span>(<span class="ty">String</span> password) {</span></div>
+<div class="cl"><span class="ln">42</span><span>    <span class="ty">int</span> score <span class="op">=</span> <span class="nm">0</span>;</span></div>
+<div class="cl"><span class="ln">43</span><span>    <span class="kw">if</span> (password.<span class="fn">length</span>() <span class="op">&gt;=</span> <span class="nm">8</span>) score<span class="op">++</span>;</span></div>
+<div class="cl"><span class="ln">44</span><span>    <span class="kw">if</span> (password.<span class="fn">matches</span>(<span class="st">".*[A-Z].*"</span>)) score<span class="op">++</span>;</span></div>
+<div class="cl"><span class="ln">45</span><span>    <span class="kw">if</span> (password.<span class="fn">matches</span>(<span class="st">".*[a-z].*"</span>)) score<span class="op">++</span>;</span></div>
+<div class="cl"><span class="ln">46</span><span>    <span class="kw">if</span> (password.<span class="fn">matches</span>(<span class="st">".*[0-9].*"</span>)) score<span class="op">++</span>;</span></div>
+<div class="cl"><span class="ln">47</span><span>    <span class="kw">if</span> (password.<span class="fn">matches</span>(<span class="st">".*[!@#$%^&amp;*()].*"</span>)) score<span class="op">++</span>;</span></div>
+<div class="cl"><span class="ln">48</span><span>    <span class="kw">if</span> (score <span class="op">&lt;=</span> <span class="nm">2</span>)</span></div>
+<div class="cl"><span class="ln">49</span><span>      System.out.<span class="fn">println</span>(<span class="st">"Password Strength: WEAK"</span>);</span></div>
+<div class="cl"><span class="ln">50</span><span>    <span class="kw">else if</span> (score <span class="op">==</span> <span class="nm">3</span> <span class="op">||</span> score <span class="op">==</span> <span class="nm">4</span>)</span></div>
+<div class="cl"><span class="ln">51</span><span>      System.out.<span class="fn">println</span>(<span class="st">"Password Strength: MEDIUM"</span>);</span></div>
+<div class="cl"><span class="ln">52</span><span>    <span class="kw">else</span></span></div>
+<div class="cl"><span class="ln">53</span><span>      System.out.<span class="fn">println</span>(<span class="st">"Password Strength: STRONG"</span>);</span></div>
+<div class="cl"><span class="ln">54</span><span>  }</span></div>
+<div class="cl"><span class="ln">55</span><span>}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logic reference -->
+    <div class="panel">
+      <div class="pbar">
+        <div class="wd r"></div><div class="wd y"></div><div class="wd g"></div>
+        <span class="pt">checkStrength() — Logic &amp; Live Check</span>
+      </div>
+      <div class="ic-body">
+
+        <div class="ic-sec">Strength Levels</div>
+        <div class="levels">
+          <div class="lv weak"><span class="lvb">WEAK</span><span class="lvc">score &lt;= 2 &nbsp;·&nbsp; 0–2 conditions met</span></div>
+          <div class="lv medium"><span class="lvb">MEDIUM</span><span class="lvc">score == 3 or 4 &nbsp;·&nbsp; 3–4 conditions met</span></div>
+          <div class="lv strong"><span class="lvb">STRONG</span><span class="lvc">score == 5 &nbsp;·&nbsp; all 5 conditions met</span></div>
+        </div>
+
+        <div class="ic-sec">
+          Live Criteria
+          <span id="liveTag" style="margin-left:auto;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3)">no password set</span>
+        </div>
+
+        <div class="ct">
+          <div class="cr fail" id="cr0"><div class="ci">✕</div><span>length &gt;= 8</span><span class="cp">+1</span></div>
+          <div class="cr fail" id="cr1"><div class="ci">✕</div><span>has uppercase [A-Z]</span><span class="cp">+1</span></div>
+          <div class="cr fail" id="cr2"><div class="ci">✕</div><span>has lowercase [a-z]</span><span class="cp">+1</span></div>
+          <div class="cr fail" id="cr3"><div class="ci">✕</div><span>has digit [0-9]</span><span class="cp">+1</span></div>
+          <div class="cr fail" id="cr4"><div class="ci">✕</div><span>has special [!@#$%^&amp;*()]</span><span class="cp">+1</span></div>
+        </div>
+
+        <div class="sb-wrap">
+          <div class="sb-hd">
+            <span style="color:var(--text2);font-size:11px">Score</span>
+            <span id="sbVal" style="font-size:11px;color:var(--text)">0 / 5</span>
+          </div>
+          <div class="sb-trk"><div class="sb-fill" id="sbFill"></div></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <span>PASSWORD STRENGTH CHECKER — JAVA SIMULATION</span>
+  <span>Exact replica of PasswordStrengthChecker.java · do-while + switch logic</span>
+</footer>
+
+<script>
+// ── Java program state ──
+let pw      = "";       // static String password = "";
+let state   = "MENU";  // MENU | AWAIT_CREATE | AWAIT_EDIT
+let exited  = false;
+
+// ── Output helpers ──
+const OUT = () => document.getElementById("out");
+function pr(txt, cls="l-menu") {
+  const o=OUT(), s=document.createElement("span"), br=document.createElement("br");
+  s.className="line "+cls; s.textContent=txt;
+  o.appendChild(s); o.appendChild(br);
+  o.scrollTop=o.scrollHeight;
+}
+function pbl(){ const o=OUT(),br=document.createElement("br"); o.appendChild(br); o.scrollTop=o.scrollHeight; }
+
+// ── Java checkStrength() — exact replica ──
+function checkStrength(password){
+  let score=0;
+  if(password.length>=8)          score++;
+  if(/[A-Z]/.test(password))     score++;
+  if(/[a-z]/.test(password))     score++;
+  if(/[0-9]/.test(password))     score++;
+  if(/[!@#$%^&*()]/.test(password)) score++;
+
+  if(score<=2)
+    pr("Password Strength: WEAK","l-weak");
+  else if(score===3||score===4)
+    pr("Password Strength: MEDIUM","l-medium");
+  else
+    pr("Password Strength: STRONG","l-strong");
+}
+
+// ── Show main menu (System.out.println output) ──
+function menu(){
+  pbl();
+  pr("----- PASSWORD STRENGTH CHECKER -----","l-div");
+  pr("1. Create Password");
+  pr("2. Check Password Strength");
+  pr("3. Edit Password");
+  pr("4. Exit");
+  pr("Enter your choice: ","l-prompt");
+}
+
+// ── Process user input (mirrors do-while + switch) ──
+function run(raw){
+  const val=raw.trim();
+  if(exited){ pr("Program has exited. Click ↺ Restart.","l-warn"); return; }
+  pr("$> "+val,"l-user");
+
+  // Waiting for password input (case 1 or 3)
+  if(state==="AWAIT_CREATE"){
+    pw=val;
+    pr("Password created successfully!","l-ok");
+    state="MENU"; live(pw); menu(); return;
+  }
+  if(state==="AWAIT_EDIT"){
+    pw=val;
+    pr("Password updated successfully!","l-ok");
+    state="MENU"; live(pw); menu(); return;
+  }
+
+  // Menu state — parse integer choice
+  const c=parseInt(val);
+  if(isNaN(c)){ pr("Invalid choice!","l-err"); menu(); return; }
+
+  switch(c){
+    case 1:
+      pr("Create your password: ","l-prompt");
+      state="AWAIT_CREATE"; break;
+    case 2:
+      if(pw===""){
+        pr("No password created yet!","l-err");
+        menu();
+      } else {
+        pbl();
+        pr("Checking: "+mask(pw),"l-sys");
+        checkStrength(pw);
+        menu();
+      }
+      break;
+    case 3:
+      if(pw===""){
+        pr("No password available to edit!","l-err");
+        menu();
+      } else {
+        pr("Enter new password: ","l-prompt");
+        state="AWAIT_EDIT";
+      }
+      break;
+    case 4:
+      pbl();
+      pr("Exiting program...","l-sys");
+      pr("Process finished with exit code 0","l-div");
+      exited=true;
+      const i=document.getElementById("tIn");
+      i.disabled=true; i.placeholder="Program exited — click ↺ Restart";
+      break;
+    default:
+      pr("Invalid choice!","l-err");
+      menu();
+  }
+}
+
+function mask(p){
+  if(!p)return"";
+  if(p.length<=2)return"*".repeat(p.length);
+  return p[0]+"*".repeat(p.length-2)+p[p.length-1];
+}
+
+// ── Live right panel ──
+function live(p){
+  const chk=[
+    p.length>=8,
+    /[A-Z]/.test(p),
+    /[a-z]/.test(p),
+    /[0-9]/.test(p),
+    /[!@#$%^&*()]/.test(p)
+  ];
+  const sc=chk.filter(Boolean).length;
+  for(let i=0;i<5;i++){
+    const r=document.getElementById("cr"+i);
+    r.className="cr "+(chk[i]?"pass":"fail");
+    r.querySelector(".ci").textContent=chk[i]?"✓":"✕";
+  }
+  const fill=document.getElementById("sbFill");
+  fill.style.width=p?(sc/5*100)+"%":"0%";
+  fill.style.background=sc<=2?"var(--red)":sc<=4?"var(--amber)":"var(--green)";
+  document.getElementById("sbVal").textContent=p?sc+" / 5":"0 / 5";
+  const tag=document.getElementById("liveTag");
+  if(!p){tag.textContent="no password set";tag.style.color="var(--text3)";}
+  else if(sc<=2){tag.textContent="WEAK";tag.style.color="var(--red)";}
+  else if(sc<=4){tag.textContent="MEDIUM";tag.style.color="var(--amber)";}
+  else{tag.textContent="STRONG";tag.style.color="var(--green)";}
+}
+
+// ── Controls ──
+function submit(){
+  const i=document.getElementById("tIn");
+  const v=i.value; i.value=""; run(v);
+}
+function qk(v){
+  if(state!=="MENU"||exited)return;
+  document.getElementById("tIn").value=v;
+  document.getElementById("tIn").focus();
+}
+function restart(){
+  pw=""; state="MENU"; exited=false;
+  const i=document.getElementById("tIn");
+  i.disabled=false; i.placeholder="Type input and press Enter…"; i.value="";
+  OUT().innerHTML="";
+  live("");
+  pr("Java PasswordStrengthChecker — starting...","l-sys");
+  pr("Compiled: javac 21.0.2  /  Runtime: JRE 21","l-sys");
+  menu();
+}
+
+document.getElementById("tIn").addEventListener("keydown",e=>{ if(e.key==="Enter"){e.preventDefault();submit();}});
+
+// Boot
+restart();
+</script>
+</body>
+</html>
